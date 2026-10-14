@@ -1,0 +1,60 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.7cm]{geometry}
+\usepackage{enumitem}\usepackage{titlesec}\usepackage[hidelinks]{hyperref}\usepackage{parskip}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{6pt}{2pt}
+\setlist[itemize]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.3em}
+\pagestyle{empty}
+\begin{document}
+\begin{center}
+{\Large\bfseries FPGA Image Processing: VGA Display and a 3x3 Median Filter}\\[2pt]
+{\large Verilog RTL designs on a Xilinx FPGA}\\[4pt]
+{\small FPGA laboratory course \textendash{} B.Sc. Electrical Engineering, Isfahan University of Technology}\\
+{\small Author: Kiavash Rabbani Soudabi (student ID 9821663) \textendash{} term 4012 (Fall 2022) \textendash{} individual work}
+\end{center}
+
+\section*{Purpose}
+Build two hardware image-processing designs in Verilog and verify them through simulation and on the lab board:
+(1) display a 224x224 image stored in FPGA block memory on a VGA monitor, and (2) filter a stream of image pixels in
+hardware with a 3x3 median filter, which is the standard pre-processing step before edge detection such as Sobel.
+
+\section*{Design 1 \textendash{} VGA image display}
+The top level instantiates a clock-wizard IP core that derives the 25 MHz and 40 MHz pixel clocks from the 24 MHz
+board oscillator, an image ROM initialised from a Xilinx \texttt{.coe} file, and a pixel generator that walks the
+stored image and drives the RGB outputs. Dedicated synchronisation modules generate the horizontal and vertical
+timing, and a UCF file constrains the pins and the board clock. Test patterns of 224x224 pixels (3-bit and 8-bit)
+are kept in the repository as ROM initialisation data.
+
+\section*{Design 2 \textendash{} 3x3 median filter}
+The second design streams pixels from an 8-bit block-memory ROM (depth 50176 = 224x224) and computes the median of
+every 3x3 neighbourhood on the fly:
+\begin{itemize}
+  \item nine registers hold the current window; the column registers are shifted one position per clock after every
+        third clock, so a complete window is always available without a frame buffer;
+  \item the median is extracted with a compare-and-swap network over those registers, and the filtered pixel is
+        written to the output stream together with an \texttt{op\_finished} flag;
+  \item a 16-bit address counter with a comparison constant marks the end of each three-line block, which keeps the
+        window aligned with the image rows.
+\end{itemize}
+
+\section*{Verification}
+The filter was verified with Verilog testbenches before programming the device; the captured simulation waveform is
+included in the repository. The ROM images (a noisy photograph used as the median-filter input and a grayscale scene
+used for edge detection) were decoded from the committed \texttt{.coe} files and are shown in the README, so the
+processed content can be inspected without hardware.
+
+\section*{Tools}
+Verilog-2001, Xilinx ISE (synthesis, UCF constraints, implementation) with ISim/ModelSim for simulation, Xilinx IP
+cores (clock wizard, block memory generator), VGA display.
+
+\section*{Repository contents}
+\texttt{exp6-vga/} (VGA design, pre-lab code, UCF and IP sources) $\cdot$ \texttt{exp7-median-filter/} (median filter,
+testbenches, ROM initialisation) $\cdot$ \texttt{data/} (the 224x224 test images in \texttt{.coe} format) $\cdot$
+\texttt{reports/} (submitted pre-report) $\cdot$ \texttt{docs/} (this overview, simulation waveform and decoded test
+images).
+
+\section*{Skills demonstrated}
+Verilog RTL design; FPGA design flow in Xilinx ISE; VGA timing and synchronisation; clock generation with IP cores;
+block-memory based image storage; streaming image processing in hardware; 3x3 windowing by column shifting; median
+filter implementation as a compare-and-swap network; testbench-based verification of RTL.
+\end{document}
